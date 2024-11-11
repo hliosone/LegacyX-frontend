@@ -115,7 +115,7 @@ function App() {
     }
   };
 
-  const handleVerifyServiceFee = async () => {
+/*   const handleVerifyServiceFee = async () => {
     try {
       const response = await fetch(`${import.meta.env.VITE_BACKEND_URL}/api/customer/verifyServiceFee`, {
         method: 'POST',
@@ -142,7 +142,7 @@ function App() {
     } catch (error) {
       setError("Request error verifying service fees.");
     }
-  };
+  }; */
 
   const handleActivateInheritanceContract = async () => {
     try {
@@ -314,9 +314,9 @@ function App() {
                         <img src={serviceFeeQrCodeUrl} alt="QR Code for service fee payment" />
                       </div>
                     )}
-                    <button onClick={handleVerifyServiceFee} className="primary-button">
+ {/*                  <button onClick={handleVerifyServiceFee} className="primary-button">
                       Verify service fees payment
-                    </button>
+                    </button> */}
                     {!multisigAddress ? (
                       <button onClick={handleGenerateMultisigAddress} className="primary-button">
                         Generate inheritance address
