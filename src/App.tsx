@@ -5,20 +5,20 @@ import { Xumm } from 'xumm';
 const xumm = new Xumm(import.meta.env.VITE_XUMM_API_KEY);
 
 function App() {
-  const [account, setAccount] = useState('');
-  const [activeTab, setActiveTab] = useState('create');
-  const [inheritorAddress, setInheritorAddress] = useState('');
-  const [error, setError] = useState(null);
-  const [successMessage, setSuccessMessage] = useState('');
-  const [vcToVerify, setVcToVerify] = useState('');
-  const [deceasedDidToVerify, setDeceasedDidToVerify] = useState('');
-  const [verificationResult, setVerificationResult] = useState('');
-  const [serviceFeeQrCodeUrl, setServiceFeeQrCodeUrl] = useState(null);
-  const [multisigActivationQrCodeUrl, setMultisigActivationQrCodeUrl] = useState(null);
-  const [govTestatorDID, setGovTestatorDID] = useState('');
-  const [multisigAddress, setMultisigAddress] = useState('');
-  const [qrCodeUrl, setQrCodeUrl] = useState(null);
-  const [inheritorQrCodeUrl, setInheritorQrCodeUrl] = useState(null);
+  const [account, setAccount] = useState<string>('');
+  const [activeTab, setActiveTab] = useState<string>('create');
+  const [inheritorAddress, setInheritorAddress] = useState<string>('');
+  const [error, setError] = useState<string | null>(null);
+  const [successMessage, setSuccessMessage] = useState<string | null>(null);
+  const [vcToVerify, setVcToVerify] = useState<string>('');
+  const [deceasedDidToVerify, setDeceasedDidToVerify] = useState<string>('');
+  const [verificationResult, setVerificationResult] = useState<string>('');
+  const [serviceFeeQrCodeUrl, setServiceFeeQrCodeUrl] = useState<string | null>(null);
+  const [multisigActivationQrCodeUrl, setMultisigActivationQrCodeUrl] = useState<string | null>(null);
+  const [govTestatorDID, setGovTestatorDID] = useState<string>('');
+  const [multisigAddress, setMultisigAddress] = useState<string>('');
+  const [qrCodeUrl, setQrCodeUrl] = useState<string | null>(null);
+  const [inheritorQrCodeUrl, setInheritorQrCodeUrl] = useState<string | null>(null);
 
   const fetchAccount = async () => {
     const a = await xumm.user.account;
@@ -44,7 +44,7 @@ function App() {
     setAccount('');
   };
 
-  const handleTabChange = (tab) => {
+  const handleTabChange = (tab: string) => {
     setActiveTab(tab);
     setError(null);
     setSuccessMessage('');
@@ -63,8 +63,8 @@ function App() {
         setMultisigAddress(data.multisigAddress);
         setError(null);
         setSuccessMessage("Adresse multisig générée. Veuillez scanner le QR code pour envoyer 20 XRP et activer le compte.");
-  
-        const payload = await xumm.payload.create({
+
+        const payload = await xumm.payload?.create({
           txjson: {
             TransactionType: 'Payment',
             Destination: data.multisigAddress,
@@ -92,15 +92,15 @@ function App() {
         setError("Adresse de destination non définie.");
         return;
       }
-  
-      const payload = await xumm.payload.create({
+
+      const payload = await xumm.payload?.create({
         txjson: {
           TransactionType: 'Payment',
           Destination: import.meta.env.VITE_PLATFORM_ADDRESS,
           Amount: '5000000' // 5 XRP en drops
         }
       });
-  
+
       if (payload && payload.refs && payload.refs.qr_png) {
         setServiceFeeQrCodeUrl(payload.refs.qr_png);
         setError(null);
@@ -113,37 +113,36 @@ function App() {
       setError("Erreur de requête lors de la création du QR code pour les frais de service.");
     }
   };
-  
-const handleVerifyServiceFee = async () => {
-  try {
-    const response = await fetch(`${import.meta.env.VITE_BACKEND_URL}/api/customer/verifyServiceFee`, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify({
-        testatorAddress: account, // L'adresse du testateur à passer en paramètre
-      }),
-    });
 
-    if (response.ok) {
-      const feeReceived = await response.json();
-      if (feeReceived) {
-        setSuccessMessage("Frais de service reçu avec succès !");
+  const handleVerifyServiceFee = async () => {
+    try {
+      const response = await fetch(`${import.meta.env.VITE_BACKEND_URL}/api/customer/verifyServiceFee`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          testatorAddress: account,
+        }),
+      });
+
+      if (response.ok) {
+        const feeReceived = await response.json();
+        if (feeReceived) {
+          setSuccessMessage("Frais de service reçu avec succès !");
+        } else {
+          setError("Le paiement des frais de service de 5 XRP n'a pas été trouvé. Veuillez vérifier.");
+        }
       } else {
-        setError("Le paiement des frais de service de 5 XRP n'a pas été trouvé. Veuillez vérifier.");
+        const errorText = await response.text();
+        setError(errorText);
+        setSuccessMessage('');
       }
-    } else {
-      const errorText = await response.text();
-      setError(errorText);
-      setSuccessMessage('');
+    } catch (error) {
+      setError("Erreur de requête lors de la vérification des frais de service.");
     }
-  } catch (error) {
-    setError("Erreur de requête lors de la vérification des frais de service.");
-  }
-};
+  };
 
-  
   const handleActivateInheritanceContract = async () => {
     try {
       const response = await fetch(`${import.meta.env.VITE_BACKEND_URL}/api/customer/activateInheritanceContract`, {
@@ -182,16 +181,16 @@ const handleVerifyServiceFee = async () => {
   
       if (response.ok) {
         const { txjson } = await response.json();
-        const payload = await xumm.payload.create({ txjson });
+        const payload = await xumm.payload?.create({ txjson });
   
-        if (payload) {
+        if (payload && xumm.payload) {
           setQrCodeUrl(payload.refs.qr_png);
           setError(null);
-          const subscription = await xumm.payload.subscribe(payload.uuid, async (event) => {
+          const subscription = (await xumm.payload.subscribe(payload.uuid, async (event) => {
             if (event.data.signed === true) {
-              subscription.cancel();
-              const result = await xumm.payload.get(payload.uuid);
-              if (result.meta.resolved === true && result.meta.signed === true) {
+              (subscription as any).cancel(); // Force le typage pour accéder à 'cancel'
+              const result = await xumm.payload?.get(payload.uuid);
+              if (result && result.meta.resolved === true && result.meta.signed === true) {
                 setSuccessMessage('Transaction soumise avec succès pour le DID');
                 setQrCodeUrl(null);
               } else {
@@ -200,9 +199,9 @@ const handleVerifyServiceFee = async () => {
             } else if (event.data.signed === false) {
               setError("La transaction a été rejetée.");
               setQrCodeUrl(null);
-              subscription.cancel();
+              (subscription as any).cancel();
             }
-          });
+          })) as any; // Utilisation de 'as any' pour résoudre les erreurs de typage
         } else {
           setError("Erreur lors de la création du payload. Le payload est null.");
         }
@@ -214,42 +213,40 @@ const handleVerifyServiceFee = async () => {
       setError("Erreur de requête lors de la préparation de la transaction");
     }
   };
+  
+  
 
   const handleVerifyDeathCertificate = async () => {
     try {
       const url = `${import.meta.env.VITE_BACKEND_URL}/api/government/verifyDeathCertificate?vc=${encodeURIComponent(vcToVerify)}&testatorDid=${encodeURIComponent(deceasedDidToVerify)}&inheritorAddress=${encodeURIComponent(account)}`;
-    
+
       const response = await fetch(url, {
         method: 'GET',
         headers: {
           'Content-Type': 'application/json',
         },
       });
-  
+
       if (response.ok) {
-        const data = await response.json(); // Lire la réponse JSON
-    
-        // Affichez le message de succès ou d'erreur en fonction de la réponse
+        const data = await response.json();
         if (data.message) {
           setVerificationResult("Certificat valide.");
-          setError(null); // Supprime les erreurs en cas de succès
+          setError(null);
         } else {
           setVerificationResult("Certificat invalide.");
-          setError(null); // Pas d'erreur technique
+          setError(null);
         }
       } else {
-        const errorText = await response.text();
         setError("Invalid certificate or DID");
       }
     } catch (error) {
       setError("Error while verifying the death certificate.");
     }
   };
-  
-  
-  const handleGenerateInheritorQrCode = async (txJson) => {
+
+  const handleGenerateInheritorQrCode = async (txJson: any) => {
     try {
-      const payload = await xumm.payload.create({ txjson: txJson });
+      const payload = await xumm.payload?.create({ txjson: txJson });
       if (payload && payload.refs && payload.refs.qr_png) {
         setInheritorQrCodeUrl(payload.refs.qr_png);
         setError(null);
