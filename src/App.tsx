@@ -2,13 +2,23 @@ import { useState, useEffect } from 'react';
 import './App.css';
 import { Xumm } from 'xumm';
 
-const xumm = new Xumm(import.meta.env.VITE_XUMM_API_KEY); // API Key pour Xumm
+const xumm = new Xumm(import.meta.env.VITE_XUMM_API_KEY);
 
 function App() {
   const [account, setAccount] = useState('');
   const [activeTab, setActiveTab] = useState('create');
-  const [testatorDID, setTestatorDID] = useState('');
   const [inheritorAddress, setInheritorAddress] = useState('');
+  const [error, setError] = useState(null);
+  const [successMessage, setSuccessMessage] = useState('');
+  const [vcToVerify, setVcToVerify] = useState('');
+  const [deceasedDidToVerify, setDeceasedDidToVerify] = useState('');
+  const [verificationResult, setVerificationResult] = useState('');
+  const [serviceFeeQrCodeUrl, setServiceFeeQrCodeUrl] = useState(null);
+  const [multisigActivationQrCodeUrl, setMultisigActivationQrCodeUrl] = useState(null);
+  const [govTestatorDID, setGovTestatorDID] = useState('');
+  const [multisigAddress, setMultisigAddress] = useState('');
+  const [qrCodeUrl, setQrCodeUrl] = useState(null);
+  const [inheritorQrCodeUrl, setInheritorQrCodeUrl] = useState(null);
 
   const fetchAccount = async () => {
     const a = await xumm.user.account;
@@ -16,10 +26,7 @@ function App() {
   };
 
   useEffect(() => {
-    // Vérifie l'état de connexion lors du montage du composant
     fetchAccount();
-
-    // Écoute les changements de connexion en temps réel
     const handleStatusChange = () => fetchAccount();
     xumm.on('success', handleStatusChange);
     xumm.on('retrieved', handleStatusChange);
@@ -37,43 +44,228 @@ function App() {
     setAccount('');
   };
 
-  const handleTabChange = (tab: string) => {
+  const handleTabChange = (tab) => {
     setActiveTab(tab);
+    setError(null);
+    setSuccessMessage('');
   };
-  
 
-  const handleCreateContract = async () => {
-    const contractData = {
-      testatorDID: testatorDID,
-      inheritorAddress: inheritorAddress,
-    };
-  
+  const handleGenerateMultisigAddress = async () => {
     try {
-      const response = await fetch('http://localhost:8080/api/createContract', {
+      const response = await fetch(`${import.meta.env.VITE_BACKEND_URL}/api/customer/generateMultisigAddress`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
         },
-        body: JSON.stringify(contractData),
       });
-  
       if (response.ok) {
-        console.log("Contrat envoyé avec succès");
+        const data = await response.json();
+        setMultisigAddress(data.multisigAddress);
+        setError(null);
+        setSuccessMessage("Adresse multisig générée. Veuillez scanner le QR code pour envoyer 20 XRP et activer le compte.");
+  
+        const payload = await xumm.payload.create({
+          txjson: {
+            TransactionType: 'Payment',
+            Destination: data.multisigAddress,
+            Amount: '20000000' // 20 XRP en drops
+          }
+        });
+        
+        if (payload && payload.refs && payload.refs.qr_png) {
+          setMultisigActivationQrCodeUrl(payload.refs.qr_png);
+        } else {
+          setError("Erreur lors de la création du QR code de paiement.");
+        }
       } else {
-        console.log("Erreur lors de l'envoi du contrat");
+        setError("Erreur lors de la génération de l'adresse multisig.");
       }
     } catch (error) {
-      console.error("Erreur de requête :", error);
+      setError("Erreur de requête lors de la génération de l'adresse multisig.");
+    }
+  };
+
+  const handleGenerateServiceFeeQrCode = async () => {
+    try {
+      if (!import.meta.env.VITE_PLATFORM_ADDRESS) {
+        console.error("VITE_PLATFORM_ADDRESS n'est pas défini dans les variables d'environnement.");
+        setError("Adresse de destination non définie.");
+        return;
+      }
+  
+      const payload = await xumm.payload.create({
+        txjson: {
+          TransactionType: 'Payment',
+          Destination: import.meta.env.VITE_PLATFORM_ADDRESS,
+          Amount: '5000000' // 5 XRP en drops
+        }
+      });
+  
+      if (payload && payload.refs && payload.refs.qr_png) {
+        setServiceFeeQrCodeUrl(payload.refs.qr_png);
+        setError(null);
+      } else {
+        console.error("Payload data:", payload);
+        setError("Erreur lors de la création du QR code pour les frais de service.");
+      }
+    } catch (error) {
+      console.error("Erreur lors de la création du QR code:", error);
+      setError("Erreur de requête lors de la création du QR code pour les frais de service.");
     }
   };
   
+const handleVerifyServiceFee = async () => {
+  try {
+    const response = await fetch(`${import.meta.env.VITE_BACKEND_URL}/api/customer/verifyServiceFee`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({
+        testatorAddress: account, // L'adresse du testateur à passer en paramètre
+      }),
+    });
+
+    if (response.ok) {
+      const feeReceived = await response.json();
+      if (feeReceived) {
+        setSuccessMessage("Frais de service reçu avec succès !");
+      } else {
+        setError("Le paiement des frais de service de 5 XRP n'a pas été trouvé. Veuillez vérifier.");
+      }
+    } else {
+      const errorText = await response.text();
+      setError(errorText);
+      setSuccessMessage('');
+    }
+  } catch (error) {
+    setError("Erreur de requête lors de la vérification des frais de service.");
+  }
+};
+
+  
+  const handleActivateInheritanceContract = async () => {
+    try {
+      const response = await fetch(`${import.meta.env.VITE_BACKEND_URL}/api/customer/activateInheritanceContract`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          testatorAddress: account,
+          inheritorAddress: inheritorAddress,
+          multisigAddress: multisigAddress,
+        }),
+      });
+
+      if (response.ok) {
+        const message = await response.text();
+        setSuccessMessage(`Succès ! ${message}`);
+        setError(null);
+      } else {
+        const errorText = await response.text();
+        setError(errorText);
+        setSuccessMessage('');
+      }
+    } catch (error) {
+      setError("Erreur de requête lors de l'activation du contrat d'héritage.");
+    }
+  };
+
+  const handleCreateDidAndSignTransaction = async () => {
+    try {
+      const response = await fetch(`${import.meta.env.VITE_BACKEND_URL}/api/government/prepareDeathCertificateTransaction`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ deceasedDid: govTestatorDID, inheritor: account }),
+      });
+  
+      if (response.ok) {
+        const { txjson } = await response.json();
+        const payload = await xumm.payload.create({ txjson });
+  
+        if (payload) {
+          setQrCodeUrl(payload.refs.qr_png);
+          setError(null);
+          const subscription = await xumm.payload.subscribe(payload.uuid, async (event) => {
+            if (event.data.signed === true) {
+              subscription.cancel();
+              const result = await xumm.payload.get(payload.uuid);
+              if (result.meta.resolved === true && result.meta.signed === true) {
+                setSuccessMessage('Transaction soumise avec succès pour le DID');
+                setQrCodeUrl(null);
+              } else {
+                setError("Erreur lors de la soumission de la transaction.");
+              }
+            } else if (event.data.signed === false) {
+              setError("La transaction a été rejetée.");
+              setQrCodeUrl(null);
+              subscription.cancel();
+            }
+          });
+        } else {
+          setError("Erreur lors de la création du payload. Le payload est null.");
+        }
+      } else {
+        const errorText = await response.text();
+        setError("Erreur lors de la préparation de la transaction");
+      }
+    } catch (error) {
+      setError("Erreur de requête lors de la préparation de la transaction");
+    }
+  };
+
+  const handleVerifyDeathCertificate = async () => {
+    try {
+      const url = `${import.meta.env.VITE_BACKEND_URL}/api/government/verifyDeathCertificate?vc=${encodeURIComponent(vcToVerify)}&testatorDid=${encodeURIComponent(deceasedDidToVerify)}&inheritorAddress=${encodeURIComponent(account)}`;
+    
+      const response = await fetch(url, {
+        method: 'GET',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+      });
+  
+      if (response.ok) {
+        const data = await response.json(); // Lire la réponse JSON
+    
+        // Affichez le message de succès ou d'erreur en fonction de la réponse
+        if (data.message) {
+          setVerificationResult("Certificat valide.");
+          setError(null); // Supprime les erreurs en cas de succès
+        } else {
+          setVerificationResult("Certificat invalide.");
+          setError(null); // Pas d'erreur technique
+        }
+      } else {
+        const errorText = await response.text();
+        setError("Invalid certificate or DID");
+      }
+    } catch (error) {
+      setError("Error while verifying the death certificate.");
+    }
+  };
+  
+  
+  const handleGenerateInheritorQrCode = async (txJson) => {
+    try {
+      const payload = await xumm.payload.create({ txjson: txJson });
+      if (payload && payload.refs && payload.refs.qr_png) {
+        setInheritorQrCodeUrl(payload.refs.qr_png);
+        setError(null);
+      } else {
+        setError("Erreur lors de la création du QR code pour la signature de l'héritier.");
+      }
+    } catch (error) {
+      setError("Erreur lors de la génération du QR code pour l'héritier.");
+    }
+  };
 
   return (
-
-    // Add image logo on top of H1 title not too big <img src="/public\legacyx-logo-site.png" alt="LegacyX Logo"/>
     <div id="app">
       <div className="container">
         <div className="left-section">
+          <img src="/legacyx-logo-site.png" alt="LegacyX Logo" className="logo" />
           <h1>LegacyX</h1>
           <h2>XRPL Inheritance</h2>          
           <p>Secure Your Digital Legacy</p>
@@ -84,7 +276,7 @@ function App() {
           ) : (
             <div>
               <p>Connected as: <b>{account}</b></p>
-              <button onClick={logout} className="secondary-button">Déconnexion</button>
+              <button onClick={logout} className="secondary-button">Disconnect</button>
             </div>
           )}
         </div>
@@ -93,13 +285,13 @@ function App() {
             <>
               <div className="tab-container">
                 <button className={`tab ${activeTab === 'create' ? 'active' : ''}`} onClick={() => handleTabChange('create')}>
-                  Create
+                  Create Contract
                 </button>
                 <button className={`tab ${activeTab === 'claim' ? 'active' : ''}`} onClick={() => handleTabChange('claim')}>
-                  Claim
+                  Claim Inheritance
                 </button>
                 <button className={`tab ${activeTab === 'gov' ? 'active' : ''}`} onClick={() => handleTabChange('gov')}>
-                  Gov
+                  Government certificates
                 </button>
               </div>
               <div className="tab-content">
@@ -108,14 +300,6 @@ function App() {
                     <h2>Create Inheritance Contract</h2>
                     <p>Instructions pour créer un contrat d'héritage sécurisé.</p>
                     <label>
-                      Testator DID:
-                      <input
-                        type="text"
-                        value={testatorDID}
-                        onChange={(e) => setTestatorDID(e.target.value)}
-                      />
-                    </label>
-                    <label>
                       Inheritor Address:
                       <input
                         type="text"
@@ -123,27 +307,123 @@ function App() {
                         onChange={(e) => setInheritorAddress(e.target.value)}
                       />
                     </label>
-                    <button onClick={handleCreateContract} className="primary-button">
-                      Create Contract (10 XRP)
+                    <button onClick={handleGenerateServiceFeeQrCode} className="primary-button">
+                      Pay service fees (5 XRP)
                     </button>
+                    {serviceFeeQrCodeUrl && (
+                      <div className="qr-code-container">
+                        <p>Scan this Xumm QR Code to pay service fees :</p>
+                        <img src={serviceFeeQrCodeUrl} alt="QR Code for service fee payment" />
+                      </div>
+                    )}
+                    <button onClick={handleVerifyServiceFee} className="primary-button">
+                      Verify service fees payment
+                    </button>
+                    {!multisigAddress ? (
+                      <button onClick={handleGenerateMultisigAddress} className="primary-button">
+                        Generate inheritance address
+                      </button>
+                    ) : (
+                      <div>
+                        <p>Multisig address : <b>{multisigAddress}</b></p>
+                        {multisigActivationQrCodeUrl && (
+                          <div className="qr-code-container">
+                            <p>Scan this Xumm QR Code to send 20 XRP to your inheritance account and activate it :</p>
+                            <img src={multisigActivationQrCodeUrl} alt="QR Code for multisig activation" />
+                          </div>
+                        )}
+                        <button onClick={handleActivateInheritanceContract} className="primary-button">
+                          Validate inheritance contract activation
+                        </button>
+                      </div>
+                    )}
+                    {successMessage && (
+                      <div className="success-message">
+                        {successMessage}
+                      </div>
+                    )}
+                    {error && (
+                      <div className="error-message">
+                        {error}
+                      </div>
+                    )}
                   </div>
                 )}
                 {activeTab === 'claim' && (
                   <div>
                     <h2>Claim Inheritance</h2>
-                    <p>Instructions pour réclamer votre héritage digital.</p>
+                    <p>Claim your digital inheritance.</p>
+                    <label>
+                      Verifiable Credential (VC):
+                      <textarea
+                        value={vcToVerify}
+                        onChange={(e) => setVcToVerify(e.target.value)}
+                        rows={5}
+                        style={{ width: '100%' }}
+                      />
+                    </label>
+                    <label>
+                      Deceased DID:
+                      <input
+                        type="text"
+                        value={deceasedDidToVerify}
+                        onChange={(e) => setDeceasedDidToVerify(e.target.value)}
+                      />
+                    </label>
+                    <button onClick={handleVerifyDeathCertificate} className="primary-button">
+                      Verify Death Certificate
+                    </button>
+                    {verificationResult && (
+                      <p style={{ color: verificationResult.includes("valide") ? 'green' : 'red' }}>
+                        {verificationResult}
+                      </p>
+                    )}
+                    {inheritorQrCodeUrl && (
+                      <div className="qr-code-container">
+                        <p>Scan this QR Code to sign as the inheritor :</p>
+                        <img src={inheritorQrCodeUrl} alt="QR Code for inheritor signature" />
+                      </div>
+                    )}
+                    {error && <div className="error-message">{error}</div>}
                   </div>
                 )}
                 {activeTab === 'gov' && (
                   <div>
                     <h2>Government Verification</h2>
-                    <p>Instructions pour la vérification gouvernementale.</p>
+                    <p>Get an official death certificate signed by the government:</p>
+                    <label>
+                      Testator DID:
+                      <input
+                        type="text"
+                        value={govTestatorDID}
+                        onChange={(e) => setGovTestatorDID(e.target.value)}
+                      />
+                    </label>
+                    <button onClick={handleCreateDidAndSignTransaction} className="primary-button">
+                      Get certificate
+                    </button>
+                    {qrCodeUrl && (
+                      <div className="qr-code-container">
+                        <p>Scan this Xumm QR Code to get your certificate :</p>
+                        <img src={qrCodeUrl} alt="QR Code for transaction" />
+                      </div>
+                    )}
+                    {successMessage && (
+                      <div className="success-message">
+                        {successMessage}
+                      </div>
+                    )}
+                    {error && (
+                      <div className="error-message">
+                        {error}
+                      </div>
+                    )}
                   </div>
                 )}
               </div>
             </>
           ) : (
-            <p className="right-section-placeholder">Veuillez connecter votre wallet pour accéder aux fonctionnalités.</p>
+            <p className="right-section-placeholder">Connect with your wallet to access digital inheritance services.</p>
           )}
         </div>
       </div>

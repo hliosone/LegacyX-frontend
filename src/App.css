@@ -1,113 +1,177 @@
 #app {
   display: flex;
-  justify-content: center;
-  align-items: center;
-  height: 100vh;
-  background-color: #f4f5fa;
+  height: 100vh; /* Fixe la hauteur à 100% de la fenêtre */
+  overflow-y: auto; /* Permet le défilement si le contenu est plus grand que la hauteur de la fenêtre */
 }
 
 .container {
   display: flex;
-  max-width: 1200px;
-  background-color: #ffffff;
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+  width: 100vw;
+  min-height: 85vh; /* Utiliser min-height pour que la taille s'adapte */
+  background-color: #e3eff3;
   border-radius: 8px;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+  overflow: hidden;
+  flex: 1; /* Permet à .container de s'étendre pour remplir l'espace restant */
 }
 
 .left-section {
-  flex: 1;
+  width: 35%;
   padding: 40px;
-  background: #f4f5fa;
+  background-color: #1f2a2f;
   display: flex;
   flex-direction: column;
-  justify-content: center;
   align-items: center;
+  justify-content: center;
   text-align: center;
+  color: #d0e2ed;
 }
 
 .left-section h1 {
-  font-size: 3rem;
-  color: #6a0dad;
+  font-size: 2.8rem;
+  color: #3cc6fc;
   margin-bottom: 10px;
 }
 
+.left-section h2 {
+  font-size: 1.5rem;
+  color: #d0e2ed;
+  margin-bottom: 20px;
+}
+
 .left-section p {
-  font-size: 1.2rem;
-  color: #6a0dad;
+  font-size: 1rem;
+  color: #d0e2ed;
+  margin-bottom: 30px;
+}
+
+.left-section .primary-button, .left-section .secondary-button {
+  padding: 12px 24px;
+  font-size: 1rem;
+  width: 100%;
+  max-width: 200px;
+  margin-top: 20px;
+  background-color: #ef5350;
+  color: #ffffff;
 }
 
 .right-section {
-  flex: 1;
+  width: 65%;
   padding: 40px;
   display: flex;
   flex-direction: column;
   justify-content: center;
+  align-items: flex-start;
+  overflow-y: auto;
 }
 
 .tab-container {
   display: flex;
-  gap: 10px;
-  margin-bottom: 20px;
+  gap: 15px;
+  margin-bottom: 25px;
+  justify-content: center;
+  width: 100%;
+  height: 50px;
 }
 
 .tab {
   padding: 10px 20px;
-  background: #f4f4f4;
-  border: none;
-  border-radius: 5px;
+  font-size: 1.2rem;
+  border-radius: 4px;
   cursor: pointer;
-  font-size: 1rem;
+  background-color: #cfe9ed;
+  color: #2b3a42;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+  transition: background-color 0.3s;
 }
 
 .tab.active {
-  background: #6a0dad;
+  background-color: #3cc6fc;
   color: #ffffff;
 }
 
+.tab:hover {
+  background-color: #7fd5e9;
+}
+
 .tab-content {
-  margin-top: 20px;
+  width: 100%;
+  min-height: 300px;
 }
 
-label {
-  display: block;
-  margin: 10px 0;
+.tab-content h2 {
+  font-size: 2rem;
+  margin-bottom: 15px;
+  color: #3cc6fc;
 }
 
-.primary-button {
+.tab-content p {
+  font-size: 1.1rem;
+  color: #5a5a5a;
+  margin-bottom: 20px;
+}
+
+.tab-content label {
+  font-size: 1rem;
   display: block;
+  margin-bottom: 8px;
+  color: #2b3a42;
+}
+
+.tab-content input[type="text"], .tab-content textarea {
   width: 100%;
   padding: 12px;
   font-size: 1rem;
-  background-color: #28a745;
-  color: white;
-  border: none;
-  border-radius: 5px;
+  border: 1px solid #ccc;
+  border-radius: 4px;
+  margin-bottom: 20px;
+}
+
+.primary-button {
+  background-color: #66bb6a;
+  color: #ffffff;
+  font-size: 1.2rem;
+  padding: 12px 24px;
+  border-radius: 4px;
+  width: 100%;
+  max-width: 250px;
+  transition: background-color 0.3s ease;
   cursor: pointer;
-  margin-top: 15px;
 }
 
 .primary-button:hover {
-  background-color: #218838;
+  background-color: #388e3c;
 }
 
-.secondary-button {
+.logo {
+  width: 120px;
+  height: 120px;
+  border-radius: 50%;
+  object-fit: cover;
+  margin-bottom: 20px;
+}
+
+.qr-code-container img {
+  max-width: 200px;
+  height: auto;
+}
+
+.qr-code-container {
+  text-align: center;
+  margin-top: 15px;
+}
+
+.success-message, .error-message {
   margin-top: 20px;
   padding: 10px;
-  font-size: 1rem;
-  background-color: #dc3545;
-  color: white;
-  border: none;
+  font-size: 16px;
   border-radius: 5px;
-  cursor: pointer;
 }
 
-.secondary-button:hover {
-  background-color: #c82333;
+.success-message {
+  color: #28a745;
 }
 
-.right-section-placeholder {
-  font-size: 1rem;
-  color: #888;
-  text-align: center;
-  margin-top: 50px;
+.error-message {
+  color: #dc3545;
 }
