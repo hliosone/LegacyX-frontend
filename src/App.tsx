@@ -62,34 +62,34 @@ function App() {
         const data = await response.json();
         setMultisigAddress(data.multisigAddress);
         setError(null);
-        setSuccessMessage("Adresse multisig générée. Veuillez scanner le QR code pour envoyer 20 XRP et activer le compte.");
+        setSuccessMessage("Multisig address generated. Please scan the QR code to send 20 XRP and activate the account.");
 
         const payload = await xumm.payload?.create({
           txjson: {
             TransactionType: 'Payment',
             Destination: data.multisigAddress,
-            Amount: '20000000' // 20 XRP en drops
+            Amount: '20000000' // 20 XRP in drops
           }
         });
         
         if (payload && payload.refs && payload.refs.qr_png) {
           setMultisigActivationQrCodeUrl(payload.refs.qr_png);
         } else {
-          setError("Erreur lors de la création du QR code de paiement.");
+          setError("Error creating payment QR code.");
         }
       } else {
-        setError("Erreur lors de la génération de l'adresse multisig.");
+        setError("Error generating multisig address.");
       }
     } catch (error) {
-      setError("Erreur de requête lors de la génération de l'adresse multisig.");
+      setError("Request error when generating multisig address.");
     }
   };
 
   const handleGenerateServiceFeeQrCode = async () => {
     try {
       if (!import.meta.env.VITE_PLATFORM_ADDRESS) {
-        console.error("VITE_PLATFORM_ADDRESS n'est pas défini dans les variables d'environnement.");
-        setError("Adresse de destination non définie.");
+        console.error("VITE_PLATFORM_ADDRESS is not defined in environment variables.");
+        setError("Destination address not defined.");
         return;
       }
 
@@ -97,7 +97,7 @@ function App() {
         txjson: {
           TransactionType: 'Payment',
           Destination: import.meta.env.VITE_PLATFORM_ADDRESS,
-          Amount: '5000000' // 5 XRP en drops
+          Amount: '5000000' // 5 XRP in drops
         }
       });
 
@@ -106,11 +106,11 @@ function App() {
         setError(null);
       } else {
         console.error("Payload data:", payload);
-        setError("Erreur lors de la création du QR code pour les frais de service.");
+        setError("Error creating QR code for service fees.");
       }
     } catch (error) {
-      console.error("Erreur lors de la création du QR code:", error);
-      setError("Erreur de requête lors de la création du QR code pour les frais de service.");
+      console.error("Error creating QR code:", error);
+      setError("Request error creating QR code for service fees.");
     }
   };
 
@@ -129,9 +129,9 @@ function App() {
       if (response.ok) {
         const feeReceived = await response.json();
         if (feeReceived) {
-          setSuccessMessage("Frais de service reçu avec succès !");
+          setSuccessMessage("Service fee received successfully!");
         } else {
-          setError("Le paiement des frais de service de 5 XRP n'a pas été trouvé. Veuillez vérifier.");
+          setError("Service fee payment of 5 XRP not found. Please check.");
         }
       } else {
         const errorText = await response.text();
@@ -139,7 +139,7 @@ function App() {
         setSuccessMessage('');
       }
     } catch (error) {
-      setError("Erreur de requête lors de la vérification des frais de service.");
+      setError("Request error verifying service fees.");
     }
   };
 
@@ -159,7 +159,7 @@ function App() {
 
       if (response.ok) {
         const message = await response.text();
-        setSuccessMessage(`Succès ! ${message}`);
+        setSuccessMessage(`Success! ${message}`);
         setError(null);
       } else {
         const errorText = await response.text();
@@ -167,7 +167,7 @@ function App() {
         setSuccessMessage('');
       }
     } catch (error) {
-      setError("Erreur de requête lors de l'activation du contrat d'héritage.");
+      setError("Request error activating inheritance contract.");
     }
   };
 
@@ -188,34 +188,32 @@ function App() {
           setError(null);
           const subscription = (await xumm.payload.subscribe(payload.uuid, async (event) => {
             if (event.data.signed === true) {
-              (subscription as any).cancel(); // Force le typage pour accéder à 'cancel'
+              (subscription as any).cancel(); 
               const result = await xumm.payload?.get(payload.uuid);
               if (result && result.meta.resolved === true && result.meta.signed === true) {
-                setSuccessMessage('Transaction soumise avec succès pour le DID');
+                setSuccessMessage('Transaction successfully submitted for DID');
                 setQrCodeUrl(null);
               } else {
-                setError("Erreur lors de la soumission de la transaction.");
+                setError("Error submitting transaction.");
               }
             } else if (event.data.signed === false) {
-              setError("La transaction a été rejetée.");
+              setError("Transaction was rejected.");
               setQrCodeUrl(null);
               (subscription as any).cancel();
             }
-          })) as any; // Utilisation de 'as any' pour résoudre les erreurs de typage
+          })) as any; 
         } else {
-          setError("Erreur lors de la création du payload. Le payload est null.");
+          setError("Error creating payload. Payload is null.");
         }
       } else {
         const errorText = await response.text();
-        setError("Erreur lors de la préparation de la transaction");
+        setError("Error preparing transaction");
       }
     } catch (error) {
-      setError("Erreur de requête lors de la préparation de la transaction");
+      setError("Request error preparing transaction");
     }
   };
   
-  
-
   const handleVerifyDeathCertificate = async () => {
     try {
       const url = `${import.meta.env.VITE_BACKEND_URL}/api/government/verifyDeathCertificate?vc=${encodeURIComponent(vcToVerify)}&testatorDid=${encodeURIComponent(deceasedDidToVerify)}&inheritorAddress=${encodeURIComponent(account)}`;
@@ -230,10 +228,10 @@ function App() {
       if (response.ok) {
         const data = await response.json();
         if (data.message) {
-          setVerificationResult("Certificat valide.");
+          setVerificationResult("Valid certificate.");
           setError(null);
         } else {
-          setVerificationResult("Certificat invalide.");
+          setVerificationResult("Invalid certificate.");
           setError(null);
         }
       } else {
@@ -251,10 +249,10 @@ function App() {
         setInheritorQrCodeUrl(payload.refs.qr_png);
         setError(null);
       } else {
-        setError("Erreur lors de la création du QR code pour la signature de l'héritier.");
+        setError("Error creating QR code for inheritor signature.");
       }
     } catch (error) {
-      setError("Erreur lors de la génération du QR code pour l'héritier.");
+      setError("Error generating QR code for inheritor.");
     }
   };
 
@@ -295,7 +293,7 @@ function App() {
                 {activeTab === 'create' && (
                   <div>
                     <h2>Create Inheritance Contract</h2>
-                    <p>Instructions pour créer un contrat d'héritage sécurisé.</p>
+                    <p>Instructions for creating a secure inheritance contract.</p>
                     <label>
                       Inheritor Address:
                       <input
