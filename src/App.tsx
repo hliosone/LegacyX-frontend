@@ -13,6 +13,7 @@ function App() {
   const [vcToVerify, setVcToVerify] = useState<string>('');
   const [deceasedDidToVerify, setDeceasedDidToVerify] = useState<string>('');
   const [verificationResult, setVerificationResult] = useState<string>('');
+  const [verificationStatus, setVerificationStatus] = useState<string | null>(null);
   const [serviceFeeQrCodeUrl, setServiceFeeQrCodeUrl] = useState<string | null>(null);
   const [multisigActivationQrCodeUrl, setMultisigActivationQrCodeUrl] = useState<string | null>(null);
   const [govTestatorDID, setGovTestatorDID] = useState<string>('');
@@ -228,10 +229,12 @@ function App() {
       if (response.ok) {
         const data = await response.json();
         if (data.message) {
-          setVerificationResult("Valid certificate.");
+          setVerificationResult("Valid certificate. Funds transferred to inheritor.");
+          setVerificationStatus("valid"); // Set status to "valid"
           setError(null);
         } else {
           setVerificationResult("Invalid certificate.");
+          setVerificationStatus("invalid"); // Set status to "invalid"
           setError(null);
         }
       } else {
@@ -369,7 +372,7 @@ function App() {
                       Verify Death Certificate
                     </button>
                     {verificationResult && (
-                      <p style={{ color: verificationResult.includes("valide") ? 'green' : 'red' }}>
+                      <p style={{ color: verificationStatus === 'valid' ? 'green' : 'red' }}>
                         {verificationResult}
                       </p>
                     )}
@@ -425,6 +428,5 @@ function App() {
     </div>
   );
 }
-
 
 export default App;
