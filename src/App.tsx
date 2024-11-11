@@ -115,35 +115,6 @@ function App() {
     }
   };
 
-/*   const handleVerifyServiceFee = async () => {
-    try {
-      const response = await fetch(`${import.meta.env.VITE_BACKEND_URL}/api/customer/verifyServiceFee`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          testatorAddress: account,
-        }),
-      });
-
-      if (response.ok) {
-        const feeReceived = await response.json();
-        if (feeReceived) {
-          setSuccessMessage("Service fee received successfully!");
-        } else {
-          setError("Service fee payment of 5 XRP not found. Please check.");
-        }
-      } else {
-        const errorText = await response.text();
-        setError(errorText);
-        setSuccessMessage('');
-      }
-    } catch (error) {
-      setError("Request error verifying service fees.");
-    }
-  }; */
-
   const handleActivateInheritanceContract = async () => {
     try {
       const response = await fetch(`${import.meta.env.VITE_BACKEND_URL}/api/customer/activateInheritanceContract`, {
@@ -314,9 +285,6 @@ function App() {
                         <img src={serviceFeeQrCodeUrl} alt="QR Code for service fee payment" />
                       </div>
                     )}
- {/*                  <button onClick={handleVerifyServiceFee} className="primary-button">
-                      Verify service fees payment
-                    </button> */}
                     {!multisigAddress ? (
                       <button onClick={handleGenerateMultisigAddress} className="primary-button">
                         Generate inheritance address
