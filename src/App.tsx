@@ -334,6 +334,7 @@ function App() {
                         type="text"
                         value={deceasedDidToVerify}
                         onChange={(e) => setDeceasedDidToVerify(e.target.value)}
+                        placeholder="did:xrpl:devnet:TESTASTORADDRESS"
                       />
                     </label>
                     <button onClick={handleVerifyDeathCertificate} className="primary-button">
@@ -363,6 +364,7 @@ function App() {
                         type="text"
                         value={govTestatorDID}
                         onChange={(e) => setGovTestatorDID(e.target.value)}
+                        placeholder="did:xrpl:devnet:TESTASTORADDRESS"
                       />
                     </label>
                     <button onClick={handleCreateDidAndSignTransaction} className="primary-button">
